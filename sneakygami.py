@@ -18,7 +18,7 @@ min_mouth_number = 2
 popping_rate = 10
 unpopping_rate = popping_rate*1.5
 
-show_tutorial = 1
+show_tutorial = 0
 show_hitbox = 0
 toric_space = 1
 
@@ -80,7 +80,9 @@ def snake_tongue(a, vec1, vec2):
     canvas.create_line(a,b,tags='tongue')
     line_vec(b, 0.25*vec1, tags='tongue')
     line_vec(b, -0.25*vec2, tags='tongue')
-   
+    
+def mouth(x, y):
+    triangle((x,y), forms_size*1/2, tags='mouth')
 
 
 #Text functions
@@ -103,7 +105,7 @@ def defeat():
 
 
 #Game functions
-def popping(tags, resize):
+def popping(func):
     x = random.random()*width
     y = random.random()*height
 
@@ -111,7 +113,7 @@ def popping(tags, resize):
         x = random.random()*width
         y = random.random()*height
     
-    triangle((x,y), forms_size*resize, tags=tags)
+    func(x,y)
 
 def unpopping(tag, keepalive = 1):
     if len(canvas.find_withtag(tag)) > keepalive:
@@ -142,7 +144,10 @@ def intro():
 'Game'
 def game():
     iteration = 0
-    while canvas.running_game == 1:
+    canvas.create_text(25,15, text='Score :', tags = 'score')
+    score = canvas.create_text(50, 15, text='0', tags = 'score')
+    
+    while canvas.running_game == 1:  
         if canvas.defeat == 0:
             x = canvas.winfo_pointerx()-window.winfo_rootx()
             y = canvas.winfo_pointery()-window.winfo_rooty()
@@ -154,82 +159,81 @@ def game():
             
             'Core'
             if canvas.play == 1:
-
-                    #display score
+                
+                iteration += 1
+                
+                if iteration > 1:
+                    canvas.delete('tongue')
                     
-                    iteration += 1
-                    
-                    if iteration > 1:
-                        canvas.delete('tongue')
+                    #Mouth popping
+                    if iteration%popping_rate == 0:
+                        popping(mouth)
                         
-                        #Mouth popping
-                        if iteration%popping_rate == 0:
-                            popping('mouth', 1/2)
-                            
-                        if iteration%unpopping_rate == 0:
-                            unpopping('mouth', min_mouth_number)
+                    if iteration%unpopping_rate == 0:
+                        unpopping('mouth', min_mouth_number)
 
-                        #Snake moving
-                        'Because of Tolerance 1'                      
-                        if 1 > coord_diff([canvas.new, canvas.other1, canvas.other2], pretty_coords(find_coords('snake',-1))) > 0.5:
-                            canvas.delete(canvas.find_withtag('snake')[-1])
-                        
-                        'Classical move'
+                    #Snake moving
+                    'Because of Tolerance 1'                      
+                    if 1 > coord_diff([canvas.new, canvas.other1, canvas.other2], pretty_coords(find_coords('snake',-1))) > 0.5:
+                        canvas.delete(canvas.find_withtag('snake')[-1])
+                    
+                    'Classical move'
+                    canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill ='', outline='#000000', tags = 'snake')
+                    unpopping('snake', canvas.snake_length)
+                
+                
+
+                #Next move
+                ordered_points = farest(pointer, find_coords('snake', -1))
+                
+                'Tolerance 1'
+                if ordered_points[0] == canvas.new:
+                    ordered_points = farest(pointer, find_coords('snake', -2))
+                
+                
+                far = ordered_points[0]
+                canvas.other1 = ordered_points[1]
+                canvas.other2 = ordered_points[2]
+                
+                u = 0.5*asvec(canvas.other1,canvas.other2) + asvec(canvas.other2,far)
+                canvas.new = tuple(far + 2*u)
+                
+                'Toric space (or not)'
+                if canvas.new != toric(canvas.new):
+                    if toric_space == 1:
                         canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill ='', outline='#000000', tags = 'snake')
-                        unpopping('snake', canvas.snake_length)
+                        canvas.other1 = tuple(toric(canvas.new) - asvec(canvas.new, canvas.other1))
+                        canvas.other2 = tuple(toric(canvas.new) - asvec(canvas.new, canvas.other2))
+                        canvas.new = toric(canvas.new)
+                        
+                    else:
+                        canvas.defeat = 1
+                        
+                
+                #Collision
+                scope = forms_size/np.sqrt(3)
+                hitbox = tuple(canvas.new+asvec(far, canvas.other1))
                     
-                    
- 
-                    #Next move
-                    ordered_points = farest(pointer, find_coords('snake', -1))
-                    
-                    'Tolerance 1'
-                    if ordered_points[0] == canvas.new:
-                        ordered_points = farest(pointer, find_coords('snake', -2))
-                    
-                    
-                    far = ordered_points[0]
-                    canvas.other1 = ordered_points[1]
-                    canvas.other2 = ordered_points[2]
-                    
-                    u = 0.5*asvec(canvas.other1,canvas.other2) + asvec(canvas.other2,far)
-                    canvas.new = tuple(far + 2*u)
-                    
-                    'Toric space (or not)'
-                    if canvas.new != toric(canvas.new):
-                        if toric_space == 1:
-                            canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill ='', outline='#000000', tags = 'snake')
-                            canvas.other1 = tuple(toric(canvas.new) - asvec(canvas.new, canvas.other1))
-                            canvas.other2 = tuple(toric(canvas.new) - asvec(canvas.new, canvas.other2))
-                            canvas.new = toric(canvas.new)
+                hit = canvas.find_overlapping(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope)
+                
+                'Hitbox visual'
+                if show_hitbox == 1:
+                    canvas.create_rectangle(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope, fill ='', outline='#ff0000', tags = 'hitbox')
+                    unpopping('hitbox')
+                
+                if len(hit) > 0:     
+                    for item in hit:
+                        if 'snake' in canvas.gettags(item):
+                            if coord_diff([canvas.new, canvas.other1, canvas.other2], pretty_coords(find_coords(item))) == 0:
+                                canvas.defeat = 1
                             
-                        else:
-                            canvas.defeat = 1
+                        elif 'mouth' in canvas.gettags(item):
+                            snake_tongue(hitbox, u, asvec(canvas.other1, canvas.other2))
+                            canvas.delete(item)
+                            canvas.snake_length += 1 
+                            canvas.itemconfigure(score, text=canvas.snake_length-start_length)                            
                             
-                    
-                    #Collision
-                    scope = forms_size/np.sqrt(3)
-                    hitbox = tuple(canvas.new+asvec(far, canvas.other1))
-                      
-                    hit = canvas.find_overlapping(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope)
-                    
-                    'Hitbox visual'
-                    if show_hitbox == 1:
-                        canvas.create_rectangle(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope, fill ='', outline='#ff0000', tags = 'hitbox')
-                        unpopping('hitbox')
-                    
-                    if len(hit) > 0:     
-                        for item in hit:
-                            if 'snake' in canvas.gettags(item):
-                                if coord_diff([canvas.new, canvas.other1, canvas.other2], pretty_coords(find_coords(item))) == 0:
-                                    canvas.defeat = 1
-                             
-                            elif 'mouth' in canvas.gettags(item):
-                                snake_tongue(hitbox, u, asvec(canvas.other1, canvas.other2))
-                                canvas.delete(item)
-                                canvas.snake_length += 1                             
-                                
-                    time.sleep(1/gamespeed)
+                time.sleep(1/gamespeed)
                     
         else:
             defeat()
