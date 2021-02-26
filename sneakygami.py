@@ -8,6 +8,7 @@ import random
 #Var
 width=1240
 height=720
+background_color = '#84dba4'
 
 forms_size = 32
 
@@ -21,6 +22,7 @@ unpopping_rate = popping_rate*1.5
 show_tutorial = 0
 show_hitbox = 0
 toric_space = 1
+rainbow = 1
 
 #Var text
 welcome_message = ["Welcome to Sneakygami !","You can left your keyboard at the door","Here you'll only need one pointer and two clicks", "[left-click]"]
@@ -31,7 +33,7 @@ forgotten_message = ["Oh and it's [right-click] to reset ! Kiss"]
 
 losing_list = ["R.I.P"]
 
-
+rainbow_colors = ['#ffffff','#ffb3ba','#ffdfba','#ffffba','#baffc9','#bae1ff']
 
 '''
              Utils
@@ -65,14 +67,14 @@ def toric(a):
 def line_vec(a, vec, tags=None):
     canvas.create_line(a,tuple(a + vec), tags = tags)
     
-def triangle(pos, forms_size, tags=None):
+def triangle(pos, forms_size, tags=None, fill=''):
     #Un triangle équilatéral est une jonction symmétrique de deux triangles rectangles tel que a***2 + b**2 = c**2 et 2a = c
     #Donc a**2 + b**2 = 4a**2 donc b**2 = 3a**2
     a = pos[0], (pos[1]+forms_size)
     b = (pos[0]+forms_size/np.sqrt(3)), pos[1]
     c = (pos[0]-forms_size/np.sqrt(3)), pos[1]
     
-    canvas.create_polygon(a, b, c, fill ='', outline='#000000', tags=tags)
+    canvas.create_polygon(a, b, c, fill=fill, outline='#000000', tags=tags)
 
 def snake_tongue(a, vec1, vec2):
     b = tuple(a + 0.2*(vec1-vec2))
@@ -82,7 +84,10 @@ def snake_tongue(a, vec1, vec2):
     line_vec(b, -0.25*vec2, tags='tongue')
     
 def mouth(x, y):
-    triangle((x,y), forms_size*1/2, tags='mouth')
+    color = ''
+    if rainbow == 1:
+        color = random.choice(rainbow_colors)
+    triangle((x,y), forms_size*1/2, tags='mouth', fill=color)
 
 
 #Text functions
@@ -147,6 +152,11 @@ def game():
     canvas.create_text(25,15, text='Score :', tags = 'score')
     score = canvas.create_text(50, 15, text='0', tags = 'score')
     
+    if rainbow == 1:
+        canvas.snake_colors = [rainbow_colors[i%len(rainbow_colors)] for i in range(start_length)]
+    else:
+        canvas.snake_colors = ['']
+    
     while canvas.running_game == 1:  
         if canvas.defeat == 0:
             x = canvas.winfo_pointerx()-window.winfo_rootx()
@@ -178,7 +188,7 @@ def game():
                         canvas.delete(canvas.find_withtag('snake')[-1])
                     
                     'Classical move'
-                    canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill ='', outline='#000000', tags = 'snake')
+                    canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill=canvas.snake_colors[iteration%len(canvas.snake_colors)], outline='#000000', tags = 'snake')
                     unpopping('snake', canvas.snake_length)
                 
                 
@@ -229,6 +239,10 @@ def game():
                             
                         elif 'mouth' in canvas.gettags(item):
                             snake_tongue(hitbox, u, asvec(canvas.other1, canvas.other2))
+                            
+                            'rainbow'
+                            canvas.snake_colors.append(canvas.itemcget(item,"fill"))
+                            
                             canvas.delete(item)
                             canvas.snake_length += 1 
                             canvas.itemconfigure(score, text=canvas.snake_length-start_length)                            
@@ -296,7 +310,9 @@ frame = Frame(window)
 frame.pack()
 
 #Background init
-canvas = Canvas(frame,bg='#84dba4', width=width, height=height)
+if rainbow == 1:
+    background_color = '#c9c9ff'
+canvas = Canvas(frame,bg=background_color, width=width, height=height)
 canvas.show_tutorial = show_tutorial
 canvas.create_text(width/2, height/3, text = centered(welcome_message), tags = 'text')
 
