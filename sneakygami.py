@@ -19,6 +19,7 @@ min_mouth_number = 2
 popping_rate = 10
 unpopping_rate = popping_rate*1.5
 
+'Gamemodes'
 show_tutorial = 1
 show_hitbox = 0
 toric_space = 1
@@ -152,6 +153,7 @@ def game():
     canvas.create_text(25,15, text='Score :', tags = 'score')
     score = canvas.create_text(50, 15, text='0', tags = 'score')
     
+    'Rainbow mode'
     if rainbow == 1:
         canvas.snake_colors = [rainbow_colors[i%len(rainbow_colors)] for i in range(start_length)]
     else:
@@ -183,7 +185,7 @@ def game():
                         unpopping('mouth', min_mouth_number)
 
                     #Snake moving
-                    'Because of Tolerance 1'                      
+                    'Tolerance 1'                      
                     if 1 > coord_diff([canvas.new, canvas.other1, canvas.other2], pretty_coords(find_coords('snake',-1))) > 0.5:
                         canvas.delete(canvas.find_withtag('snake')[-1])
                     
@@ -208,7 +210,7 @@ def game():
                 u = 0.5*asvec(canvas.other1,canvas.other2) + asvec(canvas.other2,far)
                 canvas.new = tuple(far + 2*u)
                 
-                'Toric space (or not)'
+                'Toric space mode'
                 if canvas.new != toric(canvas.new):
                     if toric_space == 1:
                         canvas.create_polygon(canvas.other1, canvas.other2, canvas.new, fill ='', outline='#000000', tags = 'snake')
@@ -226,7 +228,7 @@ def game():
                     
                 hit = canvas.find_overlapping(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope)
                 
-                'Hitbox visual'
+                'Hitbox visual mode'
                 if show_hitbox == 1:
                     canvas.create_rectangle(hitbox[0]-scope, hitbox[1]-scope, hitbox[0]+scope, hitbox[1]+scope, fill ='', outline='#ff0000', tags = 'hitbox')
                     unpopping('hitbox')
@@ -240,8 +242,9 @@ def game():
                         elif 'mouth' in canvas.gettags(item):
                             snake_tongue(hitbox, u, asvec(canvas.other1, canvas.other2))
                             
-                            'rainbow'
-                            canvas.snake_colors.append(canvas.itemcget(item,"fill"))
+                            'Rainbow mode'
+                            if rainbow == 1:
+                                canvas.snake_colors.append(canvas.itemcget(item,"fill"))
                             
                             canvas.delete(item)
                             canvas.snake_length += 1 
@@ -310,8 +313,10 @@ frame = Frame(window)
 frame.pack()
 
 #Background init
+'Rainbow mode default background'
 if rainbow == 1:
     background_color = '#c9c9ff'
+    
 canvas = Canvas(frame,bg=background_color, width=width, height=height)
 canvas.show_tutorial = show_tutorial
 canvas.create_text(width/2, height/3, text = centered(welcome_message), tags = 'text')
