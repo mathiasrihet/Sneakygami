@@ -19,10 +19,10 @@ min_mouth_number = 2
 popping_rate = 10
 unpopping_rate = popping_rate*1.5
 
-show_tutorial = 0
+show_tutorial = 1
 show_hitbox = 0
 toric_space = 1
-rainbow = 1
+rainbow = 0
 
 #Var text
 welcome_message = ["Welcome to Sneakygami !","You can left your keyboard at the door","Here you'll only need one pointer and two clicks", "[left-click]"]
@@ -110,7 +110,7 @@ def defeat():
 
 
 #Game functions
-def popping(func):
+def popping(draw_func):
     x = random.random()*width
     y = random.random()*height
 
@@ -118,7 +118,7 @@ def popping(func):
         x = random.random()*width
         y = random.random()*height
     
-    func(x,y)
+    draw_func(x,y)
 
 def unpopping(tag, keepalive = 1):
     if len(canvas.find_withtag(tag)) > keepalive:
